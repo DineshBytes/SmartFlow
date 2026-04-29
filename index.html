@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="SmartFlow — AI-powered intelligent traffic signal controller with real-time optimization and emergency vehicle priority">
+  <title>SmartFlow — AI Traffic Controller</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Flash overlay -->
+<div class="flash-overlay" id="flashOverlay"></div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<!-- Animated background particles -->
+<div class="bg-particles" id="bgParticles"></div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  HEADER                                                      -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<header class="app-header">
+  <div class="header-inner">
+
+    <div class="brand">
+      <div class="brand-logo">
+        <div class="traffic-pill">
+          <span class="tl-dot tl-red" id="tlRed"></span>
+          <span class="tl-dot tl-amber" id="tlAmber"></span>
+          <span class="tl-dot tl-green" id="tlGreen"></span>
+        </div>
+      </div>
+      <div class="brand-text">
+        <h1 class="brand-name">Smart<span>Flow</span></h1>
+        <p class="brand-sub">AI-Powered Traffic Signal Controller</p>
+      </div>
+    </div>
+
+    <div class="header-kpis">
+      <div class="kpi-card" title="Total signal cycles run">
+        <div class="kpi-icon">🔄</div>
+        <div class="kpi-body">
+          <span class="kpi-val" id="statCycles">0</span>
+          <span class="kpi-label">Cycles</span>
+        </div>
+      </div>
+      <div class="kpi-card" title="Vehicles cleared from queues">
+        <div class="kpi-icon">✅</div>
+        <div class="kpi-body">
+          <span class="kpi-val kv-green" id="statCleared">0</span>
+          <span class="kpi-label">Cleared</span>
+        </div>
+      </div>
+      <div class="kpi-card" title="Emergency vehicle overrides">
+        <div class="kpi-icon">🚨</div>
+        <div class="kpi-body">
+          <span class="kpi-val kv-red" id="statEmergency">0</span>
+          <span class="kpi-label">Overrides</span>
+        </div>
+      </div>
+      <div class="kpi-card" title="Total vehicles waiting">
+        <div class="kpi-icon">🚗</div>
+        <div class="kpi-body">
+          <span class="kpi-val kv-amber" id="statQueued">0</span>
+          <span class="kpi-label">Queued</span>
+        </div>
+      </div>
+      <div class="status-badge" id="systemStatus">
+        <span class="status-dot"></span>
+        <span class="status-text">SYSTEM ONLINE</span>
+      </div>
+    </div>
+
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  MAIN CONTENT                                               -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<main class="app-main">
+  <div class="layout-grid">
+
+    <!-- ─── LEFT: Intersection Visualizer ─── -->
+    <section class="panel intersection-panel" aria-label="Live intersection view">
+      <div class="panel-header">
+        <div class="ph-left">
+          <span class="ph-dot dot-cyan"></span>
+          <span class="ph-title">Live Intersection — 4-Way Signal Control</span>
+        </div>
+        <div class="ph-right">
+          <span class="live-badge">● LIVE</span>
+          <span class="cycle-display" id="cycleDisplay">IDLE</span>
+        </div>
+      </div>
+
+      <div class="intersection-wrap">
+        <!-- Directional efficiency bars -->
+        <div class="efficiency-ring" id="efficiencyRing">
+          <div class="eff-bar north-eff" id="eff-North"><div class="eff-fill" id="efill-North"></div></div>
+          <div class="eff-bar east-eff"  id="eff-East"><div class="eff-fill" id="efill-East"></div></div>
+          <div class="eff-bar south-eff" id="eff-South"><div class="eff-fill" id="efill-South"></div></div>
+          <div class="eff-bar west-eff"  id="eff-West"><div class="eff-fill" id="efill-West"></div></div>
+        </div>
+
+        <div class="road-grid">
+          <!-- Road surfaces -->
+          <div class="road road-h"></div>
+          <div class="road road-v"></div>
+          <!-- Road markings -->
+          <div class="road-markings-h">
+            <div class="dash"></div><div class="dash"></div><div class="dash"></div><div class="dash"></div>
+          </div>
+          <div class="road-markings-v">
+            <div class="dash"></div><div class="dash"></div><div class="dash"></div><div class="dash"></div>
+          </div>
+          <!-- Center box -->
+          <div class="road-center">
+            <div class="center-logo">SF</div>
+          </div>
+
+          <!-- ── NORTH lane ── -->
+          <div class="lane-unit lane-north">
+            <div class="lane-card" id="lanecard-North">
+              <div class="lc-signal-bar" id="signal-North">
+                <div class="sl-dot sl-red"></div>
+                <div class="sl-dot sl-amber"></div>
+                <div class="sl-dot sl-green"></div>
+                <span class="lc-sig-status status-red" id="sig-status-North">🔴 RED</span>
+              </div>
+              <div class="lc-header">
+                <span class="lc-arrow">↓</span>
+                <span class="lc-dir">NORTH</span>
+                <span class="emg-badge" id="emg-North" style="display:none">⚡ EMG</span>
+              </div>
+              <div class="lc-count" id="count-North">0</div>
+              <div class="lc-weight" id="weight-North">Weight: 0</div>
+              <div class="vehicle-queue" id="bubbles-North"></div>
+            </div>
+          </div>
+
+          <!-- ── SOUTH lane ── -->
+          <div class="lane-unit lane-south">
+            <div class="lane-card" id="lanecard-South">
+              <div class="lc-signal-bar" id="signal-South">
+                <div class="sl-dot sl-red"></div>
+                <div class="sl-dot sl-amber"></div>
+                <div class="sl-dot sl-green"></div>
+                <span class="lc-sig-status status-red" id="sig-status-South">🔴 RED</span>
+              </div>
+              <div class="lc-header">
+                <span class="lc-arrow">↑</span>
+                <span class="lc-dir">SOUTH</span>
+                <span class="emg-badge" id="emg-South" style="display:none">⚡ EMG</span>
+              </div>
+              <div class="lc-count" id="count-South">0</div>
+              <div class="lc-weight" id="weight-South">Weight: 0</div>
+              <div class="vehicle-queue" id="bubbles-South"></div>
+            </div>
+          </div>
+
+          <!-- ── WEST lane ── -->
+          <div class="lane-unit lane-west">
+            <div class="lane-card" id="lanecard-West">
+              <div class="lc-signal-bar" id="signal-West">
+                <div class="sl-dot sl-red"></div>
+                <div class="sl-dot sl-amber"></div>
+                <div class="sl-dot sl-green"></div>
+                <span class="lc-sig-status status-red" id="sig-status-West">🔴 RED</span>
+              </div>
+              <div class="lc-header">
+                <span class="lc-arrow">→</span>
+                <span class="lc-dir">WEST</span>
+                <span class="emg-badge" id="emg-West" style="display:none">⚡ EMG</span>
+              </div>
+              <div class="lc-count" id="count-West">0</div>
+              <div class="lc-weight" id="weight-West">Weight: 0</div>
+              <div class="vehicle-queue" id="bubbles-West"></div>
+            </div>
+          </div>
+
+          <!-- ── EAST lane ── -->
+          <div class="lane-unit lane-east">
+            <div class="lane-card" id="lanecard-East">
+              <div class="lc-signal-bar" id="signal-East">
+                <div class="sl-dot sl-red"></div>
+                <div class="sl-dot sl-amber"></div>
+                <div class="sl-dot sl-green"></div>
+                <span class="lc-sig-status status-red" id="sig-status-East">🔴 RED</span>
+              </div>
+              <div class="lc-header">
+                <span class="lc-arrow">←</span>
+                <span class="lc-dir">EAST</span>
+                <span class="emg-badge" id="emg-East" style="display:none">⚡ EMG</span>
+              </div>
+              <div class="lc-count" id="count-East">0</div>
+              <div class="lc-weight" id="weight-East">Weight: 0</div>
+              <div class="vehicle-queue" id="bubbles-East"></div>
+            </div>
+          </div>
+
+        </div><!-- /road-grid -->
+      </div><!-- /intersection-wrap -->
+
+      <!-- Simulation progress -->
+      <div class="sim-bar-wrap" id="simBarWrap" style="display:none">
+        <div class="sim-bar-track">
+          <div class="sim-bar-fill" id="simBarFill"></div>
+        </div>
+        <div class="sim-label" id="simLabel">SIMULATING...</div>
+      </div>
+
+    </section>
+
+    <!-- ─── RIGHT COLUMN ─── -->
+    <aside class="right-col">
+
+      <!-- Algorithm Info Card -->
+      <div class="panel algo-panel">
+        <div class="panel-header">
+          <div class="ph-left">
+            <span class="ph-dot dot-purple"></span>
+            <span class="ph-title">Algorithm Engine</span>
+          </div>
+        </div>
+        <div class="algo-body">
+          <div class="algo-badge">Priority Queue (Max-Heap)</div>
+          <div class="algo-rules">
+            <div class="algo-rule">
+              <span class="rule-icon">🚨</span>
+              <div class="rule-text">
+                <strong>1st Priority</strong>
+                <span>Emergency vehicles (W:100) — instant override</span>
+              </div>
+            </div>
+            <div class="algo-rule">
+              <span class="rule-icon">⚖️</span>
+              <div class="rule-text">
+                <strong>2nd Priority</strong>
+                <span>Highest total weight score across all lanes</span>
+              </div>
+            </div>
+            <div class="algo-rule">
+              <span class="rule-icon">🔢</span>
+              <div class="rule-text">
+                <strong>3rd Priority</strong>
+                <span>Queue length as tiebreaker</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vehicle Management -->
+      <div class="panel controls-panel">
+        <div class="panel-header">
+          <div class="ph-left">
+            <span class="ph-dot dot-green"></span>
+            <span class="ph-title">Vehicle Management</span>
+          </div>
+        </div>
+        <div class="controls-body">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="selDirection">Direction</label>
+              <div class="select-wrap">
+                <select id="selDirection">
+                  <option value="North">↓ North</option>
+                  <option value="South">↑ South</option>
+                  <option value="East">← East</option>
+                  <option value="West">→ West</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="selCount">Count</label>
+              <div class="select-wrap">
+                <select id="selCount">
+                  <option value="1">× 1</option>
+                  <option value="2">× 2</option>
+                  <option value="3">× 3</option>
+                  <option value="5">× 5</option>
+                </select>
+                <span class="select-arrow">▾</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="selVehicle">Vehicle Type</label>
+            <div class="vehicle-grid" id="vehicleGrid">
+              <button class="vtype-btn selected" data-type="Car" onclick="selectVehicle(this)">
+                <span class="vt-icon">🚗</span>
+                <span class="vt-name">Car</span>
+                <span class="vt-weight">W:1</span>
+              </button>
+              <button class="vtype-btn" data-type="Motorcycle" onclick="selectVehicle(this)">
+                <span class="vt-icon">🏍</span>
+                <span class="vt-name">Moto</span>
+                <span class="vt-weight">W:1</span>
+              </button>
+              <button class="vtype-btn" data-type="Truck" onclick="selectVehicle(this)">
+                <span class="vt-icon">🚛</span>
+                <span class="vt-name">Truck</span>
+                <span class="vt-weight">W:3</span>
+              </button>
+              <button class="vtype-btn" data-type="Bus" onclick="selectVehicle(this)">
+                <span class="vt-icon">🚌</span>
+                <span class="vt-name">Bus</span>
+                <span class="vt-weight">W:5</span>
+              </button>
+              <button class="vtype-btn vt-emergency" data-type="Ambulance" onclick="selectVehicle(this)">
+                <span class="vt-icon">🚑</span>
+                <span class="vt-name">Ambulance</span>
+                <span class="vt-weight">EMG</span>
+              </button>
+              <button class="vtype-btn vt-emergency" data-type="Fire Truck" onclick="selectVehicle(this)">
+                <span class="vt-icon">🚒</span>
+                <span class="vt-name">Fire</span>
+                <span class="vt-weight">EMG</span>
+              </button>
+              <button class="vtype-btn vt-emergency" data-type="Police" onclick="selectVehicle(this)">
+                <span class="vt-icon">🚓</span>
+                <span class="vt-name">Police</span>
+                <span class="vt-weight">EMG</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="action-btns">
+            <button class="btn btn-fill" onclick="fillAllLanes()">
+              <span class="btn-icon">🚗</span>
+              <span>Fill All 4 Lanes (Random)</span>
+            </button>
+            <button class="btn btn-add" id="btnAdd" onclick="addVehicle()">
+              <span class="btn-icon">＋</span>
+              <span>Add to Selected Lane</span>
+            </button>
+            <button class="btn btn-cycle" id="btnCycle" onclick="runCycle()">
+              <span class="btn-icon">▶</span>
+              <span>Run 1 Signal Cycle</span>
+            </button>
+            <button class="btn btn-simulate" id="btnSimulate" onclick="runSimulation()">
+              <span class="btn-icon">⚡</span>
+              <span>Auto Simulate (10 Cycles)</span>
+            </button>
+            <button class="btn btn-reset" onclick="resetAll()">
+              <span class="btn-icon">↺</span>
+              <span>Reset System</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Activity Log -->
+      <div class="panel log-panel">
+        <div class="panel-header">
+          <div class="ph-left">
+            <span class="ph-dot dot-amber"></span>
+            <span class="ph-title">Activity Log</span>
+          </div>
+          <button class="clear-log-btn" onclick="clearLog()" title="Clear log">✕ Clear</button>
+        </div>
+        <div class="log-body" id="logBody">
+          <div class="log-entry log-info">
+            <span class="log-icon">ℹ</span>
+            <span class="log-time" id="initTime"></span>
+            <span class="log-msg">SmartFlow initialized — All signals RED. Ready.</span>
+          </div>
+        </div>
+      </div>
+
+    </aside><!-- /right-col -->
+
+  </div><!-- /layout-grid -->
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  FOOTER                                                      -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<footer class="app-footer">
+  <span>SmartFlow v2.0 — Priority Queue Scheduling Engine</span>
+  <span class="footer-sep">|</span>
+  <span>Emergency vehicles always get <strong>instant green</strong></span>
+  <span class="footer-sep">|</span>
+  <span id="footerClock"></span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
